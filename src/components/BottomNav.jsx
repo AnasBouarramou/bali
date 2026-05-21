@@ -4,7 +4,7 @@ import { Map, CalendarDays, Bookmark, Calculator } from 'lucide-react'
 
 const tabs = [
   { id: 'map',       label: 'Carte',   icon: Map },
-  { id: 'agenda',    label: 'Agenda',  icon: CalendarDays },
+  { id: 'agenda',    label: 'Agendaa',  icon: CalendarDays },
   { id: 'saved',     label: 'À caler', icon: Bookmark },
   { id: 'converter', label: 'Monnaie', icon: Calculator },
 ]
