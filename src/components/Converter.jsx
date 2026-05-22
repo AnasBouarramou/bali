@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { ArrowLeftRight, RefreshCw } from 'lucide-react'
 
-const RATE_IDR_PER_EUR = 17544  // 1 EUR ≈ 17 544 IDR (0.000057 EUR/IDR)
+import { IDR_PER_EUR } from '../lib/currency'
 
 const QUICK_IDR = [
   { label: '50K',   value: 50_000 },
@@ -36,24 +36,24 @@ export default function Converter() {
   const onIdrChange = (v) => {
     setIdr(v)
     const n = parseFloat(v.replace(/\s/g, '').replace(',', '.'))
-    setEur(isNaN(n) ? '' : (n / RATE_IDR_PER_EUR).toFixed(2))
+    setEur(isNaN(n) ? '' : (n / IDR_PER_EUR).toFixed(2))
   }
 
   const onEurChange = (v) => {
     setEur(v)
     const n = parseFloat(v.replace(/\s/g, '').replace(',', '.'))
-    setIdr(isNaN(n) ? '' : Math.round(n * RATE_IDR_PER_EUR).toString())
+    setIdr(isNaN(n) ? '' : Math.round(n * IDR_PER_EUR).toString())
   }
 
   const pickQuick = (val) => {
     setIdr(val.toString())
-    setEur((val / RATE_IDR_PER_EUR).toFixed(2))
+    setEur((val / IDR_PER_EUR).toFixed(2))
   }
 
   const reset = () => { setIdr(''); setEur('') }
 
   return (
-    <div className="p-5 pb-10 space-y-5">
+    <div className="px-5 pb-10 space-y-5 page-safe-top">
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -64,7 +64,7 @@ export default function Converter() {
       </div>
 
       {/* Rate info */}
-      <p className="text-[11px] font-bold text-[#C4A090]">1 EUR ≈ {RATE_IDR_PER_EUR.toLocaleString('fr-FR')} IDR</p>
+      <p className="text-[11px] font-bold text-[#C4A090]">1 EUR ≈ {IDR_PER_EUR.toLocaleString('fr-FR')} IDR</p>
 
       {/* Converter card */}
       <div
@@ -144,7 +144,7 @@ export default function Converter() {
               style={{ background: 'rgba(0,0,0,0.045)' }}
             >
               <span className="text-sm font-black text-[#2C1A0E]">{label}</span>
-              <span className="text-[10px] font-bold text-[#9C7A6A]">≈ {(value / RATE_IDR_PER_EUR).toFixed(2)} €</span>
+              <span className="text-[10px] font-bold text-[#9C7A6A]">≈ {(value / IDR_PER_EUR).toFixed(2)} €</span>
             </button>
           ))}
         </div>
@@ -174,7 +174,7 @@ export default function Converter() {
               <span className="text-sm font-bold text-[#2C1A0E] text-left">{label}</span>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <span className="text-xs font-black text-[#E8704A]">{refIdr.toLocaleString()} Rp</span>
-                <span className="text-xs font-bold text-[#9C7A6A] w-12 text-right">≈ {(refIdr / RATE_IDR_PER_EUR).toFixed(2)} €</span>
+                <span className="text-xs font-bold text-[#9C7A6A] w-12 text-right">≈ {(refIdr / IDR_PER_EUR).toFixed(2)} €</span>
               </div>
             </button>
           ))}

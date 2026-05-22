@@ -4,14 +4,14 @@ import { Map, CalendarDays, Bookmark, Calculator } from 'lucide-react'
 
 const tabs = [
   { id: 'map',       label: 'Carte',   icon: Map },
-  { id: 'agenda',    label: 'Agendaa',  icon: CalendarDays },
+  { id: 'agenda',    label: 'Agenda',   icon: CalendarDays },
   { id: 'saved',     label: 'À caler', icon: Bookmark },
   { id: 'converter', label: 'Monnaie', icon: Calculator },
 ]
 
 export default function BottomNav({ activeTab, setActiveTab }) {
   return (
-    <div className="fixed bottom-nav-position left-1/2 -translate-x-1/2 z-[60] glass rounded-full px-1.5 py-1.5 flex items-center gap-0.5">
+    <div className="fixed bottom-nav-position left-1/2 -translate-x-1/2 z-[60] glass rounded-full px-2 py-2 flex items-center gap-0.5">
       {tabs.map((tab) => {
         const Icon = tab.icon
         const isActive = activeTab === tab.id
@@ -19,10 +19,10 @@ export default function BottomNav({ activeTab, setActiveTab }) {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 rounded-full font-black text-[11px] tracking-wide
+            className={`flex items-center gap-1.5 rounded-full font-black text-[12px] tracking-wide
               ${isActive
-                ? 'px-4 py-2 text-white shadow-[0_4px_16px_rgba(232,112,74,0.45)]'
-                : 'px-3 py-2 text-[#9C7A6A]'
+                ? 'px-4 py-2.5 text-white shadow-[0_4px_16px_rgba(232,112,74,0.45)]'
+                : 'px-3 py-2.5 text-[#9C7A6A]'
               }`}
             style={{
               background: isActive ? 'linear-gradient(135deg,#E8704A,#F5956A)' : 'transparent',
@@ -30,7 +30,7 @@ export default function BottomNav({ activeTab, setActiveTab }) {
             }}
           >
             <Icon
-              size={19}
+              size={21}
               strokeWidth={isActive ? 2.5 : 1.8}
               style={{ transition: 'stroke-width 0.22s ease' }}
             />

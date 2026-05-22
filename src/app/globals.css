@@ -104,6 +104,10 @@ button, a, label {
   bottom: max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));
 }
 
+.page-safe-top {
+  padding-top: max(1.5rem, var(--sat));
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════════
    ANIMATIONS
    ─────────────────────────────────────────────────────────────────────────── */

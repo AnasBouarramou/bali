@@ -1,16 +1,23 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarDays, Clock, BedDouble, Waves, UtensilsCrossed, TreePine, Landmark, MoreHorizontal } from 'lucide-react'
+import { CalendarDays, Clock, BedDouble, Waves, UtensilsCrossed, TreePine, Landmark, MoreHorizontal, Umbrella, Music, Bookmark } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 const CATEGORY_META = {
-  hotel:   { label: 'Hébergement',       color: '#C4826A', Icon: BedDouble },
-  beach:   { label: 'Plage / Surf',       color: '#7EAFC4', Icon: Waves },
-  food:    { label: 'Resto / Beach Club', color: '#D4905A', Icon: UtensilsCrossed },
-  nature:  { label: 'Cascade / Rando',    color: '#8AB48A', Icon: TreePine },
-  culture: { label: 'Temple / Culture',   color: '#B08AC4', Icon: Landmark },
-  other:   { label: 'Autre',              color: '#C4A882', Icon: MoreHorizontal },
+  hotel:      { label: 'Hébergement',    color: '#C4826A', Icon: BedDouble },
+  beach:      { label: 'Plage / Surf',   color: '#7EAFC4', Icon: Waves },
+  restaurant: { label: 'Restaurant',    color: '#D4905A', Icon: UtensilsCrossed },
+  food:       { label: 'Restaurant',    color: '#D4905A', Icon: UtensilsCrossed },
+  beach_club: { label: 'Beach Club',    color: '#E8A85A', Icon: Umbrella },
+  nightclub:  { label: 'Boîte de nuit',color: '#8B7AB8', Icon: Music },
+  nature:     { label: 'Cascade / Rando',color: '#8AB48A', Icon: TreePine },
+  culture:    { label: 'Temple / Culture',color: '#B08AC4', Icon: Landmark },
+  other:      { label: 'Autre',          color: '#C4A882', Icon: MoreHorizontal },
 }
+
+const getCatMeta = (cat) =>
+  CATEGORY_META[cat] ?? (cat?.startsWith('other_') ? CATEGORY_META.other : CATEGORY_META.other)
 
 const STAGE_GRADIENTS = [
   'linear-gradient(150deg,#C4826A,#E8704A)',
@@ -22,7 +29,7 @@ const STAGE_GRADIENTS = [
   'linear-gradient(150deg,#C4A882,#A07850)',
 ]
 
-const idrToEur = (idr) => (!idr || isNaN(idr)) ? null : (parseFloat(idr) * 0.000057).toFixed(0)
+import { idrToEur } from '../lib/currency'
 
 const fmtShort = (d) =>
   new Date(d + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
@@ -83,7 +90,7 @@ const buildStages = (allPins) => {
   return stages
 }
 
-export default function Agenda({ allPins }) {
+export default function Agenda({ allPins, onPinUpdated }) {
   const stages = buildStages(allPins)
   const [activeStageIdx, setActiveStageIdx] = useState(0)
 
@@ -91,7 +98,7 @@ export default function Agenda({ allPins }) {
 
   if (stages.length === 0) {
     return (
-      <div className="p-6">
+      <div className="px-6 pb-6 page-safe-top">
         <h1 className="text-3xl font-black text-[#2C1A0E] mb-6">Mon Itinéraire</h1>
         <div className="warm-card p-8 rounded-2xl text-center">
           <CalendarDays size={32} className="mx-auto mb-3 text-[#C4A090]" />
@@ -107,7 +114,7 @@ export default function Agenda({ allPins }) {
   const gradient = STAGE_GRADIENTS[idx % STAGE_GRADIENTS.length]
 
   return (
-    <div className="pt-6 pb-4">
+    <div className="pb-4 page-safe-top">
 
       {/* Header */}
       <div className="px-5 mb-4">
@@ -247,11 +254,11 @@ function StageCard({ stage, stageIndex, gradient }) {
             Aucune activité ce jour
           </p>
         ) : (
-          <div className="relative pl-5">
+          <div className="relative">
             <div className="absolute left-[9px] top-3 bottom-3 w-px bg-[#E8C4B0]/45" />
             <div className="space-y-2">
               {activities.map((pin, i) => (
-                <ActivityRow key={pin.id} pin={pin} index={i} />
+                <ActivityRow key={pin.id} pin={pin} index={i} onUnschedule={onPinUpdated} />
               ))}
             </div>
           </div>
@@ -277,17 +284,22 @@ function StageCard({ stage, stageIndex, gradient }) {
   )
 }
 
-function ActivityRow({ pin, index }) {
-  const meta = CATEGORY_META[pin.category] || CATEGORY_META.other
+function ActivityRow({ pin, index, onUnschedule }) {
+  const meta = getCatMeta(pin.category)
   const time = pin.planned_time ? String(pin.planned_time).slice(0, 5) : null
+
+  const handleUnschedule = async () => {
+    await supabase.from('pins').update({ planned_date: null, planned_time: null }).eq('id', pin.id)
+    onUnschedule?.()
+  }
 
   return (
     <div
-      className="flex items-start gap-3 anim-fade-up"
+      className="flex items-center gap-3 anim-fade-up"
       style={{ '--i': index, animationDelay: `${index * 55}ms` }}
     >
       <div
-        className="w-[18px] h-[18px] rounded-full flex-shrink-0 mt-1 z-10 border-2 border-white flex items-center justify-center anim-pop"
+        className="w-[18px] h-[18px] rounded-full flex-shrink-0 z-10 border-2 border-white flex items-center justify-center anim-pop"
         style={{ background: meta.color, animationDelay: `${index * 55 + 80}ms` }}
       >
         <meta.Icon size={9} color="white" strokeWidth={2.5} />
@@ -317,6 +329,13 @@ function ActivityRow({ pin, index }) {
                     {parseFloat(pin.cost_idr).toLocaleString()} IDR
                   </span>
                 )}
+                <button
+                  onClick={handleUnschedule}
+                  title="Retirer de l'agenda"
+                  className="text-[#C4A090] active:text-[#E8704A] transition-colors mt-0.5"
+                >
+                  <Bookmark size={11} strokeWidth={2} />
+                </button>
               </div>
             </div>
           </div>

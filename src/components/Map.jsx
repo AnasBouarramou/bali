@@ -4,26 +4,53 @@ import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Drawer } from 'vaul'
-import { ChevronLeft, ChevronRight, BedDouble, ExternalLink, CalendarDays, Clock, Pencil, Trash2, Camera, AlertCircle, X, Waves, UtensilsCrossed, TreePine, Landmark, MoreHorizontal } from 'lucide-react'
+import { ChevronLeft, ChevronRight, BedDouble, ExternalLink, CalendarDays, Clock, Pencil, Trash2, Camera, AlertCircle, X, Waves, UtensilsCrossed, TreePine, Landmark, MoreHorizontal, Umbrella, Music, ShoppingBag, Coffee, Star, Heart } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { idrToEur } from '../lib/currency'
 
 const CATEGORIES = [
-  { id: 'hotel',   label: 'Hébergement',       color: '#C4826A', Icon: BedDouble },
-  { id: 'beach',   label: 'Plage / Surf',       color: '#7EAFC4', Icon: Waves },
-  { id: 'food',    label: 'Resto / Beach Club', color: '#D4905A', Icon: UtensilsCrossed },
-  { id: 'nature',  label: 'Cascade / Rando',    color: '#8AB48A', Icon: TreePine },
-  { id: 'culture', label: 'Temple / Culture',   color: '#B08AC4', Icon: Landmark },
-  { id: 'other',   label: 'Autre',              color: '#C4A882', Icon: MoreHorizontal },
+  { id: 'hotel',      label: 'Hébergement',    short: 'Hôtel',   color: '#C4826A', Icon: BedDouble },
+  { id: 'beach',      label: 'Plage / Surf',   short: 'Plage',   color: '#7EAFC4', Icon: Waves },
+  { id: 'restaurant', label: 'Restaurant',     short: 'Resto',   color: '#D4905A', Icon: UtensilsCrossed },
+  { id: 'beach_club', label: 'Beach Club',     short: 'B.Club',  color: '#E8A85A', Icon: Umbrella },
+  { id: 'nightclub',  label: 'Boîte de nuit', short: 'Nuit',    color: '#8B7AB8', Icon: Music },
+  { id: 'nature',     label: 'Cascade / Rando',short: 'Nature',  color: '#8AB48A', Icon: TreePine },
+  { id: 'culture',    label: 'Temple / Culture',short: 'Culture',color: '#B08AC4', Icon: Landmark },
+  { id: 'other',      label: 'Autre',          short: 'Autre',   color: '#C4A882', Icon: MoreHorizontal },
 ]
+
+const OTHER_ICONS = [
+  { id: 'other',          Icon: MoreHorizontal, label: 'Défaut'   },
+  { id: 'other_shopping', Icon: ShoppingBag,    label: 'Shopping' },
+  { id: 'other_coffee',   Icon: Coffee,         label: 'Café'     },
+  { id: 'other_camera',   Icon: Camera,         label: 'Photo'    },
+  { id: 'other_star',     Icon: Star,           label: 'Top'      },
+  { id: 'other_health',   Icon: Heart,          label: 'Santé'    },
+]
+
+// Normalise les valeurs legacy (food) et variantes other_*
+const normCat = (cat) => {
+  if (cat === 'food') return 'restaurant'
+  if (cat?.startsWith('other_')) return 'other'
+  return cat
+}
 
 // Lucide SVG path data (24x24 viewBox) inlined for imperative Mapbox marker creation
 const ICON_PATHS = {
-  hotel:   `<path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6"/><path d="M2 18h20"/>`,
-  beach:   `<path d="M2 12q2.5 2 5 0t5 0 5 0 5 0"/><path d="M2 17q2.5 2 5 0t5 0 5 0 5 0"/><path d="M2 7q2.5 2 5 0t5 0 5 0 5 0"/>`,
-  food:    `<path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/><path d="m2.1 21.8 6.4-6.3"/><path d="m19 5-7 7"/>`,
-  nature:  `<path d="m17 14 3 3.3a1 1 0 0 1-.7 1.7H4.7a1 1 0 0 1-.7-1.7L7 14h-.3a1 1 0 0 1-.7-1.7L9 9h-.2A1 1 0 0 1 8 7.3L12 3l4 4.3a1 1 0 0 1-.8 1.7H15l3 3.3a1 1 0 0 1-.7 1.7H17Z"/><path d="M12 22v-3"/>`,
-  culture: `<path d="M10 18v-7"/><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/>`,
-  other:   `<path d="M5 12h14"/><path d="M12 5v14"/>`,
+  hotel:          `<path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6"/><path d="M2 18h20"/>`,
+  beach:          `<path d="M2 12q2.5 2 5 0t5 0 5 0 5 0"/><path d="M2 17q2.5 2 5 0t5 0 5 0 5 0"/><path d="M2 7q2.5 2 5 0t5 0 5 0 5 0"/>`,
+  restaurant:     `<path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/><path d="m2.1 21.8 6.4-6.3"/><path d="m19 5-7 7"/>`,
+  food:           `<path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/><path d="m2.1 21.8 6.4-6.3"/><path d="m19 5-7 7"/>`,
+  beach_club:     `<path d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7"/>`,
+  nightclub:      `<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>`,
+  nature:         `<path d="m17 14 3 3.3a1 1 0 0 1-.7 1.7H4.7a1 1 0 0 1-.7-1.7L7 14h-.3a1 1 0 0 1-.7-1.7L9 9h-.2A1 1 0 0 1 8 7.3L12 3l4 4.3a1 1 0 0 1-.8 1.7H15l3 3.3a1 1 0 0 1-.7 1.7H17Z"/><path d="M12 22v-3"/>`,
+  culture:        `<path d="M10 18v-7"/><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/>`,
+  other:          `<path d="M5 12h14"/><path d="M12 5v14"/>`,
+  other_shopping: `<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>`,
+  other_coffee:   `<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" x2="6" y1="1" y2="4"/><line x1="10" x2="10" y1="1" y2="4"/><line x1="14" x2="14" y1="1" y2="4"/>`,
+  other_camera:   `<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>`,
+  other_star:     `<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>`,
+  other_health:   `<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>`,
 }
 
 const createMarkerElement = (category, color, orderNum = null) => {
@@ -67,6 +94,8 @@ export default function BaliMap({ allPins, onPinSaved }) {
   const [tideData, setTideData] = useState(null)
   const [isLoadingTide, setIsLoadingTide] = useState(false)
 
+  const [categoryFilter, setCategoryFilter] = useState('all')
+
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
 
@@ -79,11 +108,6 @@ export default function BaliMap({ allPins, onPinSaved }) {
   const [plannedDate, setPlannedDate] = useState('')
   const [plannedTime, setPlannedTime] = useState('')
   const [imageFile, setImageFile] = useState(null)
-
-  const idrToEur = (idr) => {
-    if (!idr || isNaN(idr)) return 0
-    return (parseFloat(idr) * 0.000057).toFixed(2)
-  }
 
   // 🌊 VRAIE API STORMGLASS : Appel réseau pour les marées
   const fetchRealTides = async (lat, lng, dateStr) => {
@@ -168,10 +192,10 @@ export default function BaliMap({ allPins, onPinSaved }) {
   }
 
   useEffect(() => {
-    if (isMapLoaded) renderMarkers(allPins, dateFilter)
-  }, [isMapLoaded, dateFilter, allPins])
+    if (isMapLoaded) renderMarkers(allPins, dateFilter, categoryFilter)
+  }, [isMapLoaded, dateFilter, categoryFilter, allPins])
 
-  const renderMarkers = (pins, filter) => {
+  const renderMarkers = (pins, filter, catFilter = 'all') => {
     markersRef.current.forEach(marker => marker.remove())
     markersRef.current = []
 
@@ -181,6 +205,11 @@ export default function BaliMap({ allPins, onPinSaved }) {
     if (map.current.getSource('route')) map.current.removeSource('route')
 
     const filteredPins = filter === 'all' ? pins : pins.filter(p => p.planned_date === filter)
+    const visiblePins = catFilter === 'all' ? filteredPins : filteredPins.filter(p => {
+      if (catFilter === 'other') return p.category === 'other' || p.category?.startsWith('other_')
+      if (catFilter === 'restaurant') return p.category === 'restaurant' || p.category === 'food'
+      return p.category === catFilter
+    })
 
     const hotelDuJour = filteredPins.find(p => p.category === 'hotel')
     if (hotelDuJour && map.current) {
@@ -264,8 +293,10 @@ export default function BaliMap({ allPins, onPinSaved }) {
       orderedPins.forEach((p, i) => { orderMap[p.id] = i + 1 })
     }
 
-    filteredPins.forEach(pin => {
-      const catConfig = CATEGORIES.find(c => c.id === pin.category) || CATEGORIES[CATEGORIES.length - 1]
+    visiblePins.forEach(pin => {
+      const catConfig = CATEGORIES.find(c => c.id === pin.category)
+        || CATEGORIES.find(c => c.id === normCat(pin.category))
+        || CATEGORIES[CATEGORIES.length - 1]
       const orderNum = orderMap[pin.id] ?? null
       const markerEl = createMarkerElement(pin.category, catConfig.color, orderNum)
       const marker = new mapboxgl.Marker({ element: markerEl, anchor: 'bottom' })
@@ -317,7 +348,7 @@ export default function BaliMap({ allPins, onPinSaved }) {
     setSearchQuery('')
     const [lng, lat] = result.geometry.coordinates
     const p = result.properties
-    const name = p.name || p.street || ''
+    const name = p.name || (p.housenumber ? `${p.housenumber} ${p.street}` : p.street) || ''
     map.current.flyTo({ center: [lng, lat], zoom: 17, essential: true })
     openCreationForm(lng, lat, name)
   }
@@ -466,7 +497,7 @@ export default function BaliMap({ allPins, onPinSaved }) {
   return (
     <>
       {/* ── OVERLAYS CARTE ── */}
-      <div className="absolute top-4 left-4 right-4 z-10 max-w-md mx-auto space-y-2">
+      <div className="absolute left-4 right-4 z-10 max-w-md mx-auto space-y-2" style={{ top: 'max(1rem, env(safe-area-inset-top, 0px))' }}>
 
         {/* Barre de recherche */}
         <div className="glass rounded-2xl overflow-hidden">
@@ -484,8 +515,8 @@ export default function BaliMap({ allPins, onPinSaved }) {
             <div className="border-t border-white/40 max-h-52 overflow-y-auto">
               {searchResults.map((res, i) => {
                 const p = res.properties
-                const name = p.name || p.street || '—'
-                const sub = [p.type, p.city || p.district || p.locality].filter(Boolean).join(' · ')
+                const name = p.name || (p.housenumber ? `${p.housenumber} ${p.street}` : p.street) || '—'
+                const sub = [p.city || p.district || p.locality, p.state].filter(Boolean).join(', ')
                 return (
                   <button
                     key={`${p.osm_id}-${i}`}
@@ -501,6 +532,35 @@ export default function BaliMap({ allPins, onPinSaved }) {
               })}
             </div>
           )}
+        </div>
+
+        {/* Filtres catégories */}
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+          <button
+            onClick={() => setCategoryFilter('all')}
+            className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-black transition-all active:scale-95"
+            style={categoryFilter === 'all'
+              ? { background: '#2C1A0E', color: 'white', boxShadow: '0 2px 10px rgba(44,26,14,0.3)' }
+              : { background: 'rgba(255,250,246,0.78)', color: '#9C7A6A', border: '1px solid rgba(255,255,255,0.62)' }}
+          >
+            Tout
+          </button>
+          {CATEGORIES.map((cat) => {
+            const isActive = categoryFilter === cat.id
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setCategoryFilter(isActive ? 'all' : cat.id)}
+                className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-black transition-all active:scale-95"
+                style={isActive
+                  ? { background: cat.color, color: 'white', boxShadow: `0 2px 10px ${cat.color}55` }
+                  : { background: 'rgba(255,250,246,0.78)', color: '#9C7A6A', border: '1px solid rgba(255,255,255,0.62)' }}
+              >
+                <cat.Icon size={10} strokeWidth={2.2} />
+                {cat.short}
+              </button>
+            )
+          })}
         </div>
 
         {/* Navigateur de dates */}
@@ -671,7 +731,7 @@ export default function BaliMap({ allPins, onPinSaved }) {
                   {selectedPin.cost_idr > 0 && (
                     <div className="warm-card p-4 rounded-2xl flex justify-between items-center">
                       <p className="text-sm font-black text-[#2C1A0E]">{parseFloat(selectedPin.cost_idr).toLocaleString()} IDR</p>
-                      <p className="text-sm font-bold text-[#E8704A]">≈ {idrToEur(selectedPin.cost_idr)} €</p>
+                      <p className="text-sm font-bold text-[#E8704A]">≈ {idrToEur(selectedPin.cost_idr, 2)} €</p>
                     </div>
                   )}
 
@@ -764,6 +824,38 @@ export default function BaliMap({ allPins, onPinSaved }) {
                     })}
                   </div>
 
+                  {/* ── Palette icône pour "Autre" ── */}
+                  {(category === 'other' || category.startsWith('other_')) && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[#9C7A6A] mb-2 px-1">Personnaliser l'icône</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {OTHER_ICONS.map(({ id, Icon: OtherIcon, label }) => {
+                          const isActive = category === id
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => setCategory(id)}
+                              className="flex flex-col items-center gap-1 px-3 py-2 rounded-2xl text-[10px] font-black transition-all active:scale-95"
+                              style={isActive ? {
+                                background: '#C4A882',
+                                color: 'white',
+                                boxShadow: '0 4px 12px rgba(196,168,130,0.40)'
+                              } : {
+                                background: 'rgba(196,168,130,0.12)',
+                                border: '1.5px solid rgba(196,168,130,0.30)',
+                                color: '#C4A882'
+                              }}
+                            >
+                              <OtherIcon size={16} strokeWidth={isActive ? 2.5 : 2} />
+                              {label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* ── Toggle date / boîte à idées ── */}
                   <div className="bg-[#F0E4DA]/60 rounded-full p-1 flex">
                     <button
@@ -835,7 +927,7 @@ export default function BaliMap({ allPins, onPinSaved }) {
                       style={{ paddingRight: '4.5rem' }}
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[#C4A090]">
-                      ≈ {idrToEur(costIdr)} €
+                      ≈ {idrToEur(costIdr, 2)} €
                     </span>
                   </div>
 

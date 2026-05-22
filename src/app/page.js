@@ -40,14 +40,14 @@ export default function Home() {
       {/* VUE 2 : AGENDA */}
       <div className={`absolute inset-0 z-10 overflow-y-auto ${activeTab === 'agenda' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div key={tabKeys.agenda} className="anim-fade-up pb-nav-safe">
-          <Agenda allPins={allPins} />
+          <Agenda allPins={allPins} onPinUpdated={loadPins} />
         </div>
       </div>
 
       {/* VUE 3 : BOÎTE À IDÉES */}
       <div className={`absolute inset-0 z-10 overflow-y-auto ${activeTab === 'saved' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div key={tabKeys.saved} className="anim-fade-up pb-nav-safe">
-          <IdeaBox allPins={allPins} />
+          <IdeaBox allPins={allPins} onPinUpdated={loadPins} />
         </div>
       </div>
 
