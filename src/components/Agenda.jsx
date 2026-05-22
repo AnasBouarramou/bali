@@ -162,6 +162,7 @@ export default function Agenda({ allPins, onPinUpdated }) {
           stage={activeStage}
           stageIndex={idx}
           gradient={gradient}
+          onPinUpdated={onPinUpdated}
         />
       </div>
 
@@ -169,7 +170,7 @@ export default function Agenda({ allPins, onPinUpdated }) {
   )
 }
 
-function StageCard({ stage, stageIndex, gradient }) {
+function StageCard({ stage, stageIndex, gradient, onPinUpdated }) {
   const [activeDate, setActiveDate] = useState(stage.dates[0] || null)
 
   const activePins = stage.pins.filter(p => p.planned_date === activeDate)

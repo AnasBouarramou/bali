@@ -173,7 +173,7 @@ export default function Converter() {
             >
               <span className="text-sm font-bold text-[#2C1A0E] text-left">{label}</span>
               <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="text-xs font-black text-[#E8704A]">{refIdr.toLocaleString()} Rp</span>
+                <span className="text-xs font-black text-[#E8704A]">{refIdr.toLocaleString('fr-FR')} Rp</span>
                 <span className="text-xs font-bold text-[#9C7A6A] w-12 text-right">≈ {(refIdr / IDR_PER_EUR).toFixed(2)} €</span>
               </div>
             </button>

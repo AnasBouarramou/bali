@@ -564,7 +564,7 @@ export default function BaliMap({ allPins, onPinSaved }) {
         </div>
 
         {/* Navigateur de dates */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <div className="glass flex items-center gap-1 rounded-full px-1 py-1">
             <button
               onClick={() => navIndex > 0 && setDateFilter(navDates[navIndex - 1])}
@@ -575,7 +575,7 @@ export default function BaliMap({ allPins, onPinSaved }) {
             </button>
             <span className="text-xs font-black text-[#2C1A0E] w-[72px] text-center select-none">
               {dateFilter === 'all'
-                ? 'Tout Bali'
+                ? 'Vue globale'
                 : new Date(dateFilter + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
             </span>
             <button
